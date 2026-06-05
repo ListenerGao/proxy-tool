@@ -65,7 +65,7 @@ if [ -d "$INSTALL_DIR" ]; then
     rm -rf "$INSTALL_DIR"
     ok "已删除 $INSTALL_DIR"
 else
-    warn "安装目录不存在: $INSTALL_DIR（跳过）"
+    warn "安装目录不存在: $INSTALL_DIR (跳过)"
 fi
 
 # ---------- 3. 可选：删除用户配置 ----------

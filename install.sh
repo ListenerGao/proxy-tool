@@ -52,7 +52,7 @@ else
     error "需要 curl 或 wget 之一，请先安装。"
     exit 1
 fi
-ok "依赖检查通过（python3 / $DOWNLOADER）"
+ok "依赖检查通过 (python3 / $DOWNLOADER)"
 
 # ---------- 2. 下载文件 ----------
 info "准备安装目录: $INSTALL_DIR"
@@ -65,7 +65,7 @@ if [ -f "./bin/proxy.py" ] && [ -f "./shell/proxy.sh" ]; then
     cp -f ./shell/proxy.sh "$INSTALL_DIR/proxy.sh"
 elif [ -f "./proxy.py" ] && [ -f "./proxy.sh" ]; then
     # 兼容老布局（扁平结构）
-    info "检测到本地源码（扁平布局），直接复制..."
+    info "检测到本地源码 (扁平布局)，直接复制..."
     cp -f ./proxy.py "$INSTALL_DIR/proxy.py"
     cp -f ./proxy.sh "$INSTALL_DIR/proxy.sh"
 else
