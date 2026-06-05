@@ -30,7 +30,7 @@
 把 `proxy.py` 和 `proxy.sh` 放到任意位置（示例使用 `~/proxy-tool/`）：
 
 ```sh
-ls ~/proxy-tool/proxy-tool/
+ls ~/proxy-tool/
 # proxy.py  proxy.sh
 ```
 
@@ -39,8 +39,8 @@ ls ~/proxy-tool/proxy-tool/
 在 `~/.zshrc`（或 `~/.bashrc`）末尾追加：
 
 ```sh
-export PROXY_TOOL_BIN="$HOME/proxy-tool/proxy-tool/proxy.py"
-source "$HOME/proxy-tool/proxy-tool/proxy.sh"
+export PROXY_TOOL_BIN="$HOME/proxy-tool/proxy.py"
+source "$HOME/proxy-tool/proxy.sh"
 ```
 
 ### 3. 让配置生效
@@ -79,10 +79,10 @@ proxy --help
 
 ```sh
 # 单条规则
-proxy add mp 'export https_proxy=http://127.0.0.1:8118;export http_proxy=http://127.0.0.1:8118'
+proxy add mp 'export https_proxy=http://127.0.0.1:8888;export http_proxy=http://127.0.0.1:8888'
 
 # 多条规则（用 ; 拼接成一行，整体用单引号包住）
-proxy add vn 'export http_proxy=http://127.0.0.1:10808;export https_proxy=http://127.0.0.1:10808;export all_proxy=socks5://127.0.0.1:10808'
+proxy add vn 'export http_proxy=http://127.0.0.1:10888;export https_proxy=http://127.0.0.1:10888;export all_proxy=socks5://127.0.0.1:10888'
 ```
 
 > 同名 `add` 会**覆盖**原有配置。
@@ -92,10 +92,10 @@ proxy add vn 'export http_proxy=http://127.0.0.1:10808;export https_proxy=http:/
 ```sh
 $ proxy list
   * 'mp':
-        export https_proxy=http://127.0.0.1:8118;export http_proxy=http://127.0.0.1:8118
+        export https_proxy=http://127.0.0.1:8888;export http_proxy=http://127.0.0.1:8888
 
     'vn':
-        export http_proxy=http://127.0.0.1:10808;export https_proxy=http://127.0.0.1:10808;export all_proxy=socks5://127.0.0.1:10808
+        export http_proxy=http://127.0.0.1:10888;export https_proxy=http://127.0.0.1:10888;export all_proxy=socks5://127.0.0.1:10888
 ```
 
 > `*` 标记的是当前正在使用的代理。
@@ -108,7 +108,7 @@ proxy use vn       # 完整写法
 
 # 验证
 echo $http_proxy
-# http://127.0.0.1:10808
+# http://127.0.0.1:10888
 ```
 
 ### 4. 查看当前状态
@@ -116,7 +116,7 @@ echo $http_proxy
 ```sh
 $ proxy status
 [proxy] 当前: 'vn'
-export http_proxy=http://127.0.0.1:10808;export https_proxy=http://127.0.0.1:10808;export all_proxy=socks5://127.0.0.1:10808
+export http_proxy=http://127.0.0.1:10888;export https_proxy=http://127.0.0.1:10888;export all_proxy=socks5://127.0.0.1:10888
 ```
 
 ### 5. 关闭代理
@@ -157,8 +157,8 @@ proxy rm vn
 {
   "current": "mp",
   "proxies": {
-    "mp": "export https_proxy=http://127.0.0.1:8118;export http_proxy=http://127.0.0.1:8118",
-    "vn": "export http_proxy=http://127.0.0.1:10808;export https_proxy=http://127.0.0.1:10808;export all_proxy=socks5://127.0.0.1:10808"
+    "mp": "export https_proxy=http://127.0.0.1:8888;export http_proxy=http://127.0.0.1:8888",
+    "vn": "export http_proxy=http://127.0.0.1:10888;export https_proxy=http://127.0.0.1:10888;export all_proxy=socks5://127.0.0.1:10888"
   }
 }
 ```
