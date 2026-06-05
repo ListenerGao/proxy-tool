@@ -238,8 +238,8 @@ def cmd_use(args) -> None:
     log(f"[proxy] 已切换到 '{args.name}'")
 
 
-def cmd_unset(args) -> None:
-    """proxy unset / proxy off  关闭代理。"""
+def cmd_off(args) -> None:
+    """proxy off  关闭代理。"""
     cfg = load_config()
     emit(build_unset_cmd())
     cfg["current"] = None
@@ -281,8 +281,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("name")
     sp.set_defaults(func=cmd_use)
 
-    sub.add_parser("unset", help="关闭代理").set_defaults(func=cmd_unset)
-    sub.add_parser("off", help="unset 的别名").set_defaults(func=cmd_unset)
+    sub.add_parser("off", help="关闭代理").set_defaults(func=cmd_off)
     sub.add_parser("status", help="查看当前代理").set_defaults(func=cmd_status)
 
     return p
@@ -293,7 +292,7 @@ def main(argv):
 
     # 关键：支持 `proxy mp` 等价于 `proxy use mp`
     known = {"add", "list", "ls", "rm", "use",
-             "unset", "off", "status", "-h", "--help"}
+             "off", "status", "-h", "--help"}
     if len(argv) >= 1 and argv[0] not in known:
         cfg = load_config()
         if argv[0] in cfg["proxies"]:

@@ -35,7 +35,7 @@ if [[ -n "$ZSH_VERSION" ]]; then
     _proxy_complete() {
         local bin="${PROXY_TOOL_BIN:-$HOME/proxy-tool/proxy.py}"
         local cfg="${XDG_CONFIG_HOME:-$HOME/.config}/proxy-tool/config.json"
-        local builtins=(add list ls rm use unset off status)
+        local builtins=(add list ls rm use off status)
         local names=()
         if [[ -f "$cfg" ]]; then
             names=(${(f)"$(python3 -c "import json,sys;d=json.load(open('$cfg'));print('\n'.join(d.get('proxies',{}).keys()))" 2>/dev/null)"})

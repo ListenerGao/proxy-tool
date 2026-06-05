@@ -122,7 +122,7 @@ proxy --help
 | `proxy list` / `proxy ls`     | 列出所有代理，当前使用的前面带 `*`       |
 | `proxy <name>`                | 切换到名为 `<name>` 的代理（简写）       |
 | `proxy use <name>`            | 同上，完整写法                           |
-| `proxy off` / `proxy unset`   | 关闭代理（unset 所有代理环境变量）       |
+| `proxy off`                   | 关闭代理（unset 所有代理环境变量）       |
 | `proxy status`                | 查看当前正在使用哪个代理                 |
 | `proxy rm <name>`             | 删除一个代理配置                         |
 
@@ -178,8 +178,6 @@ export http_proxy=http://127.0.0.1:10888;export https_proxy=http://127.0.0.1:108
 
 ```sh
 proxy off
-# 或
-proxy unset
 
 echo $http_proxy   # 应为空
 ```
@@ -195,7 +193,7 @@ proxy rm vn
 ## 五、Tab 补全（zsh）
 
 输入 `proxy ` 后按 `<Tab>`，会自动列出：
-- 内置子命令：`add list ls rm use unset off status`
+- 内置子命令：`add list ls rm use off status`
 - 所有已保存的代理名
 
 ---
