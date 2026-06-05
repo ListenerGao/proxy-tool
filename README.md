@@ -25,7 +25,41 @@
 
 ## 二、安装
 
-### 1. 放置文件
+### 方式 A：一键安装（推荐）
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ListenerGao/proxy-tool/main/install.sh | bash
+```
+
+或使用 `wget`：
+
+```sh
+wget -qO- https://raw.githubusercontent.com/ListenerGao/proxy-tool/main/install.sh | bash
+```
+
+脚本会自动完成：
+1. 把 `proxy.py` / `proxy.sh` 安装到 `~/.proxy-tool/`
+2. 自动检测 `zsh` / `bash`，把配置追加到对应的 `~/.zshrc` 或 `~/.bashrc`（带 `# >>> proxy-tool >>>` 标记，幂等，不会重复）
+3. 提示 `source` 命令使其立即生效
+
+安装完成后执行：
+
+```sh
+source ~/.zshrc      # 或 source ~/.bashrc
+proxy --help
+```
+
+可选环境变量（安装前 `export` 即可）：
+
+| 变量 | 作用 | 默认 |
+| --- | --- | --- |
+| `PROXY_TOOL_DIR`   | 安装目录                  | `$HOME/.proxy-tool` |
+| `PROXY_TOOL_REPO`  | 仓库 raw 前缀（自定义 fork） | `https://raw.githubusercontent.com/ListenerGao/proxy-tool/main` |
+| `PROXY_TOOL_SHELL` | 指定写入的 rc 文件          | 自动检测 |
+
+### 方式 B：手动安装
+
+#### 1. 放置文件
 
 把 `proxy.py` 和 `proxy.sh` 放到任意位置（示例使用 `~/proxy-tool/`）：
 
@@ -34,7 +68,7 @@ ls ~/proxy-tool/
 # proxy.py  proxy.sh
 ```
 
-### 2. 加入 shell 配置
+#### 2. 加入 shell 配置
 
 在 `~/.zshrc`（或 `~/.bashrc`）末尾追加：
 
@@ -43,13 +77,13 @@ export PROXY_TOOL_BIN="$HOME/proxy-tool/proxy.py"
 source "$HOME/proxy-tool/proxy.sh"
 ```
 
-### 3. 让配置生效
+#### 3. 让配置生效
 
 ```sh
 source ~/.zshrc
 ```
 
-### 4. 验证
+#### 4. 验证
 
 ```sh
 proxy --help
@@ -188,14 +222,29 @@ A: 会。每次 `use` / 切换前都会先 `unset` 全部常见代理变量（`h
 
 ## 八、卸载
 
+### 方式 A：一键卸载（推荐）
+
 ```sh
-# 1. 从 ~/.zshrc 删除以下两行
-export PROXY_TOOL_BIN=...
-source .../proxy.sh
+curl -fsSL https://raw.githubusercontent.com/ListenerGao/proxy-tool/main/uninstall.sh | bash
+```
+
+如需连同 `~/.config/proxy-tool` 用户配置一起删除：
+
+```sh
+PROXY_TOOL_PURGE=1 bash -c "$(curl -fsSL https://raw.githubusercontent.com/ListenerGao/proxy-tool/main/uninstall.sh)"
+```
+
+### 方式 B：手动卸载
+
+```sh
+# 1. 从 ~/.zshrc 删除 # >>> proxy-tool >>> 与 # <<< proxy-tool <<< 之间的整段配置
+#    （手动安装时则删除以下两行）
+# export PROXY_TOOL_BIN=...
+# source .../proxy.sh
 
 # 2. 删除配置文件（可选）
 rm -rf ~/.config/proxy-tool
 
 # 3. 删除程序目录
-rm -rf ~/proxy-tool
+rm -rf ~/.proxy-tool       # 或手动安装时的目录，如 ~/proxy-tool
 ```
