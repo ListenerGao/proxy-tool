@@ -30,7 +30,12 @@ error() { printf "${RED}[proxy-tool]${RESET} %s\n" "$*" >&2; }
 # ---------- 配置 ----------
 INSTALL_DIR="${PROXY_TOOL_DIR:-$HOME/.proxy-tool}"
 REPO_RAW="${PROXY_TOOL_REPO:-https://raw.githubusercontent.com/ListenerGao/proxy-tool/main}"
-FILES=("proxy.py" "proxy.sh")
+
+# 仓库源路径 -> 本地安装路径（安装目录保持扁平结构）
+#   bin/proxy.py    -> $INSTALL_DIR/proxy.py
+#   shell/proxy.sh  -> $INSTALL_DIR/proxy.sh
+declare -a REMOTE_FILES=("bin/proxy.py" "shell/proxy.sh")
+declare -a LOCAL_FILES=("proxy.py" "proxy.sh")
 
 # ---------- 1. 检查依赖 ----------
 info "检查依赖..."
@@ -54,16 +59,23 @@ info "准备安装目录: $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 
 # 如果当前就在源码目录（本地直接运行），直接复制
-if [ -f "./proxy.py" ] && [ -f "./proxy.sh" ]; then
+if [ -f "./bin/proxy.py" ] && [ -f "./shell/proxy.sh" ]; then
     info "检测到本地源码，直接复制..."
+    cp -f ./bin/proxy.py "$INSTALL_DIR/proxy.py"
+    cp -f ./shell/proxy.sh "$INSTALL_DIR/proxy.sh"
+elif [ -f "./proxy.py" ] && [ -f "./proxy.sh" ]; then
+    # 兼容老布局（扁平结构）
+    info "检测到本地源码（扁平布局），直接复制..."
     cp -f ./proxy.py "$INSTALL_DIR/proxy.py"
     cp -f ./proxy.sh "$INSTALL_DIR/proxy.sh"
 else
     info "从远程下载: $REPO_RAW"
-    for f in "${FILES[@]}"; do
-        url="$REPO_RAW/$f"
-        dest="$INSTALL_DIR/$f"
-        info "  下载 $f ..."
+    for i in "${!REMOTE_FILES[@]}"; do
+        src="${REMOTE_FILES[$i]}"
+        dst="${LOCAL_FILES[$i]}"
+        url="$REPO_RAW/$src"
+        dest="$INSTALL_DIR/$dst"
+        info "  下载 $src -> $dst ..."
         if [ "$DOWNLOADER" = "curl" ]; then
             if ! curl -fsSL "$url" -o "$dest"; then
                 error "下载失败: $url"

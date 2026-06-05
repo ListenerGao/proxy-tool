@@ -23,6 +23,23 @@
 
 ---
 
+## 项目结构
+
+```
+proxy-tool/
+├── README.md
+├── LICENSE
+├── install.sh             # 一键安装入口
+├── uninstall.sh           # 一键卸载入口
+├── bin/
+│   └── proxy.py           # Python 主程序
+├── shell/
+│   └── proxy.sh           # shell wrapper / zsh 补全
+└── docs/                  # 文档与截图（预留）
+```
+
+---
+
 ## 二、安装
 
 ### 方式 A：一键安装（推荐）
@@ -61,9 +78,13 @@ proxy --help
 
 #### 1. 放置文件
 
-把 `proxy.py` 和 `proxy.sh` 放到任意位置（示例使用 `~/proxy-tool/`）：
+把仓库中的 `bin/proxy.py` 和 `shell/proxy.sh` 放到任意位置（示例使用 `~/proxy-tool/`）：
 
 ```sh
+mkdir -p ~/proxy-tool
+cp bin/proxy.py   ~/proxy-tool/
+cp shell/proxy.sh ~/proxy-tool/
+
 ls ~/proxy-tool/
 # proxy.py  proxy.sh
 ```
