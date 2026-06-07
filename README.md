@@ -226,9 +226,11 @@ proxy rm vn
 A: 请确认你**已经 `source proxy.sh`** 并通过 `proxy` 这个 wrapper 函数调用，而不是直接执行 `python3 proxy.py mp`。直接调用 Python 脚本是无法改父 shell 环境变量的。
 
 **Q: 多个终端窗口的代理状态会同步吗？**
-A: "当前使用的代理"会写到配置文件，跨终端共享；但每个终端窗口的环境变量**互相独立**，新开窗口需要再执行一次 `proxy <name>`。如想新开终端自动套用上次代理，可在 `~/.zshrc` 末尾添加：
+A: 会。"当前使用的代理"会写到配置文件，跨终端共享。每次新开终端 `source ~/.zshrc` 时，wrapper 会自动调用一次 `proxy.py __init`，把上次的代理 `export` 在新 shell 里 eval 一遍，因此 **`proxy status` 显示的代理与 `$http_proxy` 等环境变量保持一致**，无需手动再执行 `proxy <name>`。
+
+如果不想要这个自动恢复行为，在 `source proxy.sh` **之前**设置：
 ```sh
-proxy "$(python3 "$PROXY_TOOL_BIN" status 2>&1 | awk -F"'" '/当前/{print $2}')" 2>/dev/null
+export PROXY_TOOL_AUTOLOAD=0
 ```
 
 **Q: 如何让 git / curl / npm 等使用代理？**

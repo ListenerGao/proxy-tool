@@ -44,3 +44,23 @@ if [[ -n "$ZSH_VERSION" ]]; then
     }
     compdef _proxy_complete proxy 2>/dev/null
 fi
+
+# ----------------------------------------------------------------
+# 跨终端自动恢复：source 本文件时（即每次开新终端），如果磁盘配置中
+# 有 current，就把对应的 export 命令在当前 shell 中 eval，让新开的
+# 终端立即获得上次使用的代理环境变量。
+#
+# 关闭方式：在 source proxy.sh 之前 export PROXY_TOOL_AUTOLOAD=0
+# ----------------------------------------------------------------
+if [[ "${PROXY_TOOL_AUTOLOAD:-1}" != "0" ]]; then
+    _proxy_autoload_bin="${PROXY_TOOL_BIN:-$HOME/proxy-tool/proxy.py}"
+    if [[ -f "$_proxy_autoload_bin" ]]; then
+        # __init 是内部命令：有 current 时输出 export 语句到 stdout，否则不输出
+        _proxy_autoload_cmds="$(python3 "$_proxy_autoload_bin" __init 2>/dev/null)"
+        if [[ -n "$_proxy_autoload_cmds" ]]; then
+            eval "$_proxy_autoload_cmds"
+        fi
+        unset _proxy_autoload_cmds
+    fi
+    unset _proxy_autoload_bin
+fi

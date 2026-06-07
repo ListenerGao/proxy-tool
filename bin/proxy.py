@@ -258,6 +258,22 @@ def cmd_status(args) -> None:
     log(cfg["proxies"].get(current, ""))
 
 
+def cmd_init(args) -> None:
+    """proxy __init  shell 启动时调用：把上次的代理 export 打到 stdout，
+    供 shell wrapper 在 source 时 eval，从而让新终端自动恢复上次代理。
+    若没有 current 或对应配置丢失，则什么都不输出（静默）。
+    """
+    cfg = load_config()
+    current = cfg.get("current")
+    if not current:
+        return
+    script = cfg["proxies"].get(current)
+    if not script:
+        return
+    # 不写日志到 stderr，避免每次开终端都打印噪音
+    emit(script)
+
+
 # ============ 入口 ============
 
 def build_parser() -> argparse.ArgumentParser:
@@ -284,6 +300,10 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("off", help="关闭代理").set_defaults(func=cmd_off)
     sub.add_parser("status", help="查看当前代理").set_defaults(func=cmd_status)
 
+    # 内部命令：shell 启动时由 wrapper 调用，输出当前代理的 export 命令到 stdout
+    # help=argparse.SUPPRESS 让它不出现在 --help 列表里
+    sub.add_parser("__init", help=argparse.SUPPRESS).set_defaults(func=cmd_init)
+
     return p
 
 
@@ -292,7 +312,7 @@ def main(argv):
 
     # 关键：支持 `proxy mp` 等价于 `proxy use mp`
     known = {"add", "list", "ls", "rm", "use",
-             "off", "status", "-h", "--help"}
+             "off", "status", "__init", "-h", "--help"}
     if len(argv) >= 1 and argv[0] not in known:
         cfg = load_config()
         if argv[0] in cfg["proxies"]:
