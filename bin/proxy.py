@@ -278,7 +278,9 @@ def cmd_init(args) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="proxy", description="终端代理管理工具")
-    sub = p.add_subparsers(dest="cmd")
+    # metavar 设为自定义字符串，避免 usage / 子命令列表中自动列出全部 choices
+    # （否则隐藏命令 __init 仍会出现在 {add,list,...,__init} 里）
+    sub = p.add_subparsers(dest="cmd", metavar="<command>")
 
     sp = sub.add_parser("add", help="新增/覆盖代理：proxy add <name> '<export...>'")
     sp.add_argument("name")
@@ -300,9 +302,15 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("off", help="关闭代理").set_defaults(func=cmd_off)
     sub.add_parser("status", help="查看当前代理").set_defaults(func=cmd_status)
 
-    # 内部命令：shell 启动时由 wrapper 调用，输出当前代理的 export 命令到 stdout
-    # help=argparse.SUPPRESS 让它不出现在 --help 列表里
+    # 内部命令：shell 启动时由 wrapper 调用，输出当前代理的 export 命令到 stdout。
+    # 注册后从 help 显示中移除，使 `proxy -h` 完全不显示该命令；但仍可通过
+    # `proxy __init` 调用（main() 的 known 集合保持包含 __init）。
     sub.add_parser("__init", help=argparse.SUPPRESS).set_defaults(func=cmd_init)
+    # 移除 subparser action 中用于 help 渲染的 __init 项
+    if sub._choices_actions:
+        sub._choices_actions = [
+            a for a in sub._choices_actions if a.dest != "__init"
+        ]
 
     return p
 
