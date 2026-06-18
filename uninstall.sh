@@ -24,6 +24,7 @@ fi
 info()  { printf "${CYAN}[proxy-tool]${RESET} %s\n" "$*"; }
 ok()    { printf "${GREEN}[proxy-tool]${RESET} %s\n" "$*"; }
 warn()  { printf "${YELLOW}[proxy-tool]${RESET} %s\n" "$*"; }
+error() { printf "${RED}[proxy-tool]${RESET} %s\n" "$*" >&2; }
 
 INSTALL_DIR="${PROXY_TOOL_DIR:-$HOME/.proxy-tool}"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/proxy-tool"

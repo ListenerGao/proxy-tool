@@ -38,7 +38,7 @@ if [[ -n "$ZSH_VERSION" ]]; then
         local builtins=(add list ls rm use off status)
         local names=()
         if [[ -f "$cfg" ]]; then
-            names=(${(f)"$(python3 -c "import json,sys;d=json.load(open('$cfg'));print('\n'.join(d.get('proxies',{}).keys()))" 2>/dev/null)"})
+            names=(${(f)"$(grep -E '^    "' "$cfg" 2>/dev/null | sed 's/^    "\([^"]*\)".*/\1/')"})
         fi
         compadd -- "${builtins[@]}" "${names[@]}"
     }

@@ -52,8 +52,10 @@ def load_config() -> dict:
 
 def save_config(cfg: dict) -> None:
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    with CONFIG_FILE.open("w", encoding="utf-8") as f:
+    tmp = CONFIG_FILE.with_suffix(".tmp")
+    with tmp.open("w", encoding="utf-8") as f:
         json.dump(cfg, f, ensure_ascii=False, indent=2)
+    tmp.replace(CONFIG_FILE)
 
 
 # --------- 提取代理脚本里出现过的变量名，用于 unset ---------
@@ -102,8 +104,7 @@ def _supports_color() -> bool:
 
 
 class C:
-    if True:  # 占位，下面在运行时按需替换
-        pass
+    pass
 
 
 def _init_colors():
@@ -166,7 +167,7 @@ def cmd_list(args) -> None:
 
     # 头部
     title = " PROXY LIST "
-    bar = "─" * (term_width - len(title) - 2)
+    bar = "─" * (term_width - len(title) - 3)
     log(f"{C.BOLD}{C.CYAN}┌─{title}{bar}┐{C.RESET}")
 
     names = list(cfg["proxies"].keys())
@@ -198,7 +199,7 @@ def cmd_list(args) -> None:
         if idx < len(names) - 1:
             log(f"{C.CYAN}│{C.RESET}")
 
-    log(f"{C.BOLD}{C.CYAN}└{'─' * (term_width - 1)}┘{C.RESET}")
+    log(f"{C.BOLD}{C.CYAN}└{'─' * (term_width - 2)}┘{C.RESET}")
 
     if current:
         log(f"{C.DIM}当前使用: {C.RESET}{C.GREEN}{current}{C.RESET}   "
@@ -302,25 +303,19 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("off", help="关闭代理").set_defaults(func=cmd_off)
     sub.add_parser("status", help="查看当前代理").set_defaults(func=cmd_status)
 
-    # 内部命令：shell 启动时由 wrapper 调用，输出当前代理的 export 命令到 stdout。
-    # 注册后从 help 显示中移除，使 `proxy -h` 完全不显示该命令；但仍可通过
-    # `proxy __init` 调用（main() 的 known 集合保持包含 __init）。
-    sub.add_parser("__init", help=argparse.SUPPRESS).set_defaults(func=cmd_init)
-    # 移除 subparser action 中用于 help 渲染的 __init 项
-    if sub._choices_actions:
-        sub._choices_actions = [
-            a for a in sub._choices_actions if a.dest != "__init"
-        ]
-
     return p
 
 
 def main(argv):
+    # __init 由 proxy.sh 在 source 时调用，不走 argparse，避免依赖私有属性
+    if argv and argv[0] == "__init":
+        cmd_init(None)
+        return
+
     parser = build_parser()
 
     # 关键：支持 `proxy mp` 等价于 `proxy use mp`
-    known = {"add", "list", "ls", "rm", "use",
-             "off", "status", "__init", "-h", "--help"}
+    known = {"add", "list", "ls", "rm", "use", "off", "status", "-h", "--help"}
     if len(argv) >= 1 and argv[0] not in known:
         cfg = load_config()
         if argv[0] in cfg["proxies"]:
