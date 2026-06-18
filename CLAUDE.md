@@ -21,7 +21,7 @@ shell wrapper 用 `eval "$(python3 proxy.py ...)"` 执行 stdout 内容，因此
 
 **`proxy <name>` 短语法：** 在 `main()` 中于 argparse 解析前预处理——若 argv[0] 不在已知命令集且存在于配置的 proxies 中，则插入 `use` 前缀转发给 `cmd_use`。
 
-**`__init` 隐藏命令：** 仅由 `proxy.sh` 在 source 时调用（终端启动时自动恢复上次代理），不在 `-h` 帮助中显示，通过 argparse 的 `help=argparse.SUPPRESS` + 手动过滤 `_choices_actions` 实现。
+**`__init` 隐藏命令：** 仅由 `proxy.sh` 在 source 时调用（终端启动时自动恢复上次代理）。在 `main()` 入口处提前拦截，完全不经过 argparse，因此不会出现在 `-h` 帮助中。只输出 `export` 脚本，不做 `unset`——新终端只需恢复变量，不应清除其他代理变量。
 
 ## 配置文件
 
@@ -74,9 +74,15 @@ proxy off
 curl -fsSL https://raw.githubusercontent.com/ListenerGao/proxy-tool/main/install.sh | bash
 ```
 
+## 实现细节
+
+**原子写入：** `save_config` 先写 `config.tmp`，再 `Path.replace()` 原子替换为 `config.json`，防止并发写入损坏文件。
+
+**zsh Tab 补全：** `proxy.sh` 用 `grep -E '^    "'` + `sed` 直接解析 `config.json`，不启动 Python 子进程。依赖 `json.dump(indent=2)` 产生的固定缩进格式——代理名称条目恰好在 4 空格缩进层。
+
 ## 无测试框架
 
 项目无自动化测试。改动后通过上述手动命令验证。修改 `proxy.py` 时重点检查：
 1. stdout 有没有混入非 shell 命令的输出
 2. `cmd_use` / `cmd_off` / `cmd_rm` 的 `emit()` 调用是否正确
-3. `__init` 命令在 `proxy -h` 中是否仍被隐藏
+3. `__init` 在 `proxy -h` 中是否仍被隐藏（通过 `main()` 提前拦截实现，与 argparse 无关）
