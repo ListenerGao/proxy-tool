@@ -7,7 +7,7 @@
 - 一键切换：`proxy mp` / `proxy vn`
 - 一键关闭：`proxy off`
 - 列表显示并标注当前使用的代理
-- zsh Tab 补全
+- zsh / bash Tab 补全
 
 ---
 
@@ -34,7 +34,7 @@ proxy-tool/
 ├── bin/
 │   └── proxy.py           # Python 主程序
 ├── shell/
-│   └── proxy.sh           # shell wrapper / zsh 补全
+│   └── proxy.sh           # shell wrapper / zsh / bash 补全
 └── docs/                  # 文档与截图（预留）
 ```
 
@@ -119,7 +119,7 @@ proxy --help
 | 命令                          | 作用                                     |
 | ----------------------------- | ---------------------------------------- |
 | `proxy add <name> '<脚本>'`   | 新增 / 覆盖一个代理配置（不切换）       |
-| `proxy list` / `proxy ls`     | 列出所有代理，当前使用的前面带 `*`       |
+| `proxy list` / `proxy ls`     | 列出所有代理，当前使用的标 `●` + `[current]` |
 | `proxy <name>`                | 切换到名为 `<name>` 的代理（简写）       |
 | `proxy use <name>`            | 同上，完整写法                           |
 | `proxy off`                   | 关闭代理（unset 所有代理环境变量）       |
@@ -144,16 +144,22 @@ proxy add vn 'export http_proxy=http://127.0.0.1:10888;export https_proxy=http:/
 
 ### 2. 查看列表
 
-```sh
+```text
 $ proxy list
-  * 'mp':
-        export https_proxy=http://127.0.0.1:8888;export http_proxy=http://127.0.0.1:8888
-
-    'vn':
-        export http_proxy=http://127.0.0.1:10888;export https_proxy=http://127.0.0.1:10888;export all_proxy=socks5://127.0.0.1:10888
+┌─ PROXY LIST ─────────────────────────────────────────────────────────────────┐
+│ ● mp  [current]
+│     https_proxy = http://127.0.0.1:8888
+│     http_proxy  = http://127.0.0.1:8888
+│
+│ ○ vn
+│     http_proxy  = http://127.0.0.1:10888
+│     https_proxy = http://127.0.0.1:10888
+│     all_proxy   = socks5://127.0.0.1:10888
+└──────────────────────────────────────────────────────────────────────────────┘
+当前使用: mp   切换: proxy <name>   关闭: proxy off
 ```
 
-> `*` 标记的是当前正在使用的代理。
+> `●` + `[current]`（绿色高亮）标记的是当前正在使用的代理，`○` 为未启用。实际输出带 ANSI 配色；设置 `NO_COLOR=1` 可关闭颜色。
 
 ### 3. 切换代理
 
@@ -190,11 +196,13 @@ proxy rm vn
 
 ---
 
-## 五、Tab 补全（zsh）
+## 五、Tab 补全（zsh / bash）
 
 输入 `proxy ` 后按 `<Tab>`，会自动列出：
 - 内置子命令：`add list ls rm use off status`
 - 所有已保存的代理名
+
+zsh 用 `compdef`、bash 用 `complete -F`，两者共用同一套解析逻辑，直接读 `config.json`，不会启动 Python 子进程。
 
 ---
 
