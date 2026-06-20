@@ -138,9 +138,12 @@ proxy add mp 'export https_proxy=http://127.0.0.1:8888;export http_proxy=http://
 
 # 多条规则（用 ; 拼接成一行，整体用单引号包住）
 proxy add vn 'export http_proxy=http://127.0.0.1:10888;export https_proxy=http://127.0.0.1:10888;export all_proxy=socks5://127.0.0.1:10888'
+
+# 也可以一个 export 带多个变量（值不含空格时合法），效果与上面等价
+proxy add cv 'export https_proxy=http://127.0.0.1:7888 http_proxy=http://127.0.0.1:7888 all_proxy=socks5://127.0.0.1:7888'
 ```
 
-> 同名 `add` 会**覆盖**原有配置。
+> 同名 `add` 会**覆盖**原有配置。以上三种写法（`;` 分隔、换行分隔、单 `export` 多赋值）都合法，`proxy list` 均会逐行对齐显示。
 
 ### 2. 查看列表
 

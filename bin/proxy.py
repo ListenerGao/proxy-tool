@@ -118,11 +118,14 @@ def _init_colors():
 _init_colors()
 
 
-_EXPORT_RE = re.compile(r"\s*export\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)")
+_EXPORT_PREFIX_RE = re.compile(r"\s*export\s+(.*)", re.DOTALL)
+_ASSIGN_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)=(.*)$")
 
 
 def _parse_exports(script: str):
     """把 'export A=1;export B=2\\nexport C=3' 解析成 [(KEY, VAL), ...]。
+    也支持一个 export 后跟多个空格分隔的赋值：'export A=1 B=2 C=3'
+    （这在 shell 中合法，eval 会导出全部变量；代理值不含空格）。
     无法解析的片段以 (None, 原文) 形式返回。"""
     items = []
     # 既支持换行又支持分号分隔
@@ -133,9 +136,20 @@ def _parse_exports(script: str):
             if seg:
                 segments.append(seg)
     for seg in segments:
-        m = _EXPORT_RE.match(seg)
-        if m:
-            items.append((m.group(1), m.group(2).strip().strip("'\"")))
+        m = _EXPORT_PREFIX_RE.match(seg)
+        if not m:
+            items.append((None, seg))
+            continue
+        # export 后可跟一个或多个空格分隔的 KEY=VAL
+        parsed = []
+        for tok in m.group(1).split():
+            am = _ASSIGN_RE.match(tok)
+            if not am:
+                parsed = None
+                break
+            parsed.append((am.group(1), am.group(2).strip("'\"")))
+        if parsed:
+            items.extend(parsed)
         else:
             items.append((None, seg))
     return items

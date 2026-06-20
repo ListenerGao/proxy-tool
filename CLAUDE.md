@@ -80,6 +80,14 @@ curl -fsSL https://raw.githubusercontent.com/ListenerGao/proxy-tool/main/install
 
 **Tab 补全：** zsh（`compdef`）和 bash（`complete -F`）共用 `_proxy_names()`，用 `grep -E '^    "'` + `sed` 直接解析 `config.json`，不启动 Python 子进程。依赖 `json.dump(indent=2)` 产生的固定缩进格式——代理名称条目恰好在 4 空格缩进层。
 
+**`_parse_exports`（仅用于 `proxy list` 展示，不影响 eval）：** 把存储的脚本拆成 `(KEY, VAL)` 列表逐行对齐显示。必须同时认下面三种等价写法，因为它们都是合法 shell、`eval` 行为一致：
+
+- 分号分隔：`export A=1;export B=2`
+- 换行分隔：`export A=1\nexport B=2`
+- **一个 export 多个赋值：`export A=1 B=2 C=3`**（代理值不含空格）
+
+解析逻辑：按 `;` 和换行切成 segment → 去掉 `export` 前缀 → 剩余部分按空格切成多个 `KEY=VAL`。任一 token 不是 `KEY=VAL` 则整段以原文 `(None, 原文)` 兜底显示。**不要把它“优化”回单一赋值形式**——否则第三种写法会重新挤成一行（曾经的 bug）。真正的 export/unset 用的是原始 script，与本函数无关。
+
 ## 无测试框架
 
 项目无自动化测试。改动后通过上述手动命令验证。修改 `proxy.py` 时重点检查：
