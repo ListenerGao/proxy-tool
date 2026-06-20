@@ -30,19 +30,30 @@ proxy() {
     return $rc
 }
 
-# zsh 补全：让 `proxy <Tab>` 列出已保存的代理名
+# Tab 补全：让 `proxy <Tab>` 列出内置命令 + 已保存的代理名
+# 解析方式与安装无关，直接 grep config.json，避免启动 Python 子进程
+_proxy_names() {
+    local cfg="${XDG_CONFIG_HOME:-$HOME/.config}/proxy-tool/config.json"
+    [[ -f "$cfg" ]] || return 0
+    grep -E '^    "' "$cfg" 2>/dev/null | sed 's/^    "\([^"]*\)".*/\1/'
+}
+
 if [[ -n "$ZSH_VERSION" ]]; then
     _proxy_complete() {
-        local bin="${PROXY_TOOL_BIN:-$HOME/proxy-tool/proxy.py}"
-        local cfg="${XDG_CONFIG_HOME:-$HOME/.config}/proxy-tool/config.json"
         local builtins=(add list ls rm use off status)
-        local names=()
-        if [[ -f "$cfg" ]]; then
-            names=(${(f)"$(grep -E '^    "' "$cfg" 2>/dev/null | sed 's/^    "\([^"]*\)".*/\1/')"})
-        fi
+        local names=(${(f)"$(_proxy_names)"})
         compadd -- "${builtins[@]}" "${names[@]}"
     }
     compdef _proxy_complete proxy 2>/dev/null
+elif [[ -n "$BASH_VERSION" ]]; then
+    _proxy_complete_bash() {
+        local cur="${COMP_WORDS[COMP_CWORD]}"
+        local builtins="add list ls rm use off status"
+        local names
+        names="$(_proxy_names)"
+        COMPREPLY=($(compgen -W "$builtins $names" -- "$cur"))
+    }
+    complete -F _proxy_complete_bash proxy
 fi
 
 # ----------------------------------------------------------------

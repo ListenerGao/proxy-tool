@@ -19,6 +19,8 @@ proxy: 终端代理管理工具（与 zsh wrapper 配合使用）
 import argparse
 import json
 import os
+import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -58,6 +60,11 @@ def save_config(cfg: dict) -> None:
     tmp.replace(CONFIG_FILE)
 
 
+# 已知子命令集合：build_parser() 注册的命令与此保持一致。
+# main() 用它判断 `proxy <name>` 是否应转发给 `use`。
+COMMANDS = {"add", "list", "ls", "rm", "use", "off", "status"}
+
+
 # --------- 提取代理脚本里出现过的变量名，用于 unset ---------
 PROXY_VARS = [
     "http_proxy", "https_proxy", "all_proxy", "no_proxy",
@@ -65,17 +72,9 @@ PROXY_VARS = [
 ]
 
 
-def build_unset_cmd(script: str = "") -> str:
-    """根据脚本里出现的变量构造 unset；若 script 为空则 unset 全部常见代理变量。"""
-    if not script:
-        return "unset " + " ".join(PROXY_VARS)
-    found = []
-    for var in PROXY_VARS:
-        if var + "=" in script:
-            found.append(var)
-    if not found:
-        found = PROXY_VARS
-    return "unset " + " ".join(found)
+def build_unset_cmd() -> str:
+    """unset 全部常见代理变量。切换/关闭代理时清空旧环境。"""
+    return "unset " + " ".join(PROXY_VARS)
 
 
 # ============ 子命令实现 ============
@@ -90,10 +89,6 @@ def cmd_add(args) -> None:
     cfg["proxies"][args.name] = script
     save_config(cfg)
     log(f"[proxy] 已保存代理 '{args.name}'")
-
-
-import re
-import shutil
 
 
 # ANSI 颜色：只有 stderr 是 tty 时才上色，避免被重定向时输出乱码
@@ -315,7 +310,7 @@ def main(argv):
     parser = build_parser()
 
     # 关键：支持 `proxy mp` 等价于 `proxy use mp`
-    known = {"add", "list", "ls", "rm", "use", "off", "status", "-h", "--help"}
+    known = COMMANDS | {"-h", "--help"}
     if len(argv) >= 1 and argv[0] not in known:
         cfg = load_config()
         if argv[0] in cfg["proxies"]:

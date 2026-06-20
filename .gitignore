@@ -1,0 +1,7 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# 本地工具/编辑器
+.DS_Store

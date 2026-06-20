@@ -11,7 +11,7 @@ proxy-tool 是一个终端代理管理工具，解决"子进程无法修改父 s
 **两文件协作模式：**
 
 - `bin/proxy.py` — Python 主程序，处理所有业务逻辑
-- `shell/proxy.sh` — Shell wrapper，定义 `proxy()` 函数和 zsh 补全
+- `shell/proxy.sh` — Shell wrapper，定义 `proxy()` 函数和 zsh / bash 补全
 
 **stdout/stderr 分工约定（不能打破）：**
 - `emit()` → stdout：只输出要被 `eval` 的 shell 命令（`export`、`unset`）
@@ -78,7 +78,7 @@ curl -fsSL https://raw.githubusercontent.com/ListenerGao/proxy-tool/main/install
 
 **原子写入：** `save_config` 先写 `config.tmp`，再 `Path.replace()` 原子替换为 `config.json`，防止并发写入损坏文件。
 
-**zsh Tab 补全：** `proxy.sh` 用 `grep -E '^    "'` + `sed` 直接解析 `config.json`，不启动 Python 子进程。依赖 `json.dump(indent=2)` 产生的固定缩进格式——代理名称条目恰好在 4 空格缩进层。
+**Tab 补全：** zsh（`compdef`）和 bash（`complete -F`）共用 `_proxy_names()`，用 `grep -E '^    "'` + `sed` 直接解析 `config.json`，不启动 Python 子进程。依赖 `json.dump(indent=2)` 产生的固定缩进格式——代理名称条目恰好在 4 空格缩进层。
 
 ## 无测试框架
 
