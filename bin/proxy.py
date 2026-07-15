@@ -294,8 +294,17 @@ def cmd_init(args) -> None:
 
 # ============ 入口 ============
 
+class _StderrHelpParser(argparse.ArgumentParser):
+    """帮助文本强制走 stderr：stdout 只能输出要被 eval 的 shell 命令。
+    子命令解析器由 add_subparsers 自动继承本类（parser_class=type(self)），
+    因此 `proxy add -h` 等子命令帮助同样生效。"""
+
+    def print_help(self, file=None):
+        super().print_help(sys.stderr)
+
+
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="proxy", description="终端代理管理工具")
+    p = _StderrHelpParser(prog="proxy", description="终端代理管理工具")
     # metavar 设为自定义字符串，避免 usage / 子命令列表中自动列出全部 choices
     # （否则隐藏命令 __init 仍会出现在 {add,list,...,__init} 里）
     sub = p.add_subparsers(dest="cmd", metavar="<command>")
