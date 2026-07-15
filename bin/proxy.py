@@ -45,7 +45,9 @@ def load_config() -> dict:
         with CONFIG_FILE.open("r", encoding="utf-8") as f:
             data = json.load(f)
     except (json.JSONDecodeError, OSError) as e:
-        log(f"[proxy] 配置文件损坏: {e}")
+        log(f"[proxy] 配置文件损坏: {CONFIG_FILE}")
+        log(f"[proxy] 原因: {e}")
+        log("[proxy] 可手动修复该文件，或删除后用 'proxy add' 重新添加")
         sys.exit(1)
     data.setdefault("current", None)
     data.setdefault("proxies", {})
@@ -57,6 +59,8 @@ def save_config(cfg: dict) -> None:
     tmp = CONFIG_FILE.with_suffix(".tmp")
     with tmp.open("w", encoding="utf-8") as f:
         json.dump(cfg, f, ensure_ascii=False, indent=2)
+    # 代理地址可能含认证信息，权限收紧到仅本人可读写
+    tmp.chmod(0o600)
     tmp.replace(CONFIG_FILE)
 
 
@@ -81,6 +85,9 @@ def build_unset_cmd() -> str:
 
 def cmd_add(args) -> None:
     """proxy add <name> '<script>'  新增/覆盖代理（不切换）。"""
+    if args.name in COMMANDS or args.name == "__init":
+        log(f"[proxy] '{args.name}' 是内置命令，不能用作代理名")
+        sys.exit(1)
     cfg = load_config()
     script = " ".join(args.script).strip()
     if not script:
@@ -239,12 +246,13 @@ def cmd_use(args) -> None:
         log(f"[proxy] 未找到代理 '{args.name}'。可用 'proxy list' 查看。")
         sys.exit(1)
     script = cfg["proxies"][args.name]
+    # 先落盘再输出 shell 命令：若保存失败，环境变量不会被改动，状态保持一致
+    cfg["current"] = args.name
+    save_config(cfg)
     # 先 unset，避免上一份残留
     emit(build_unset_cmd())
     # 输出新的 export，wrapper 会 eval 它
     emit(script)
-    cfg["current"] = args.name
-    save_config(cfg)
     log(f"[proxy] 已切换到 '{args.name}'")
 
 
