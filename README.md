@@ -28,6 +28,7 @@
 ```
 proxy-tool/
 ├── README.md
+├── ROADMAP.md             # 项目进度（当前阶段 / 已完成 / 待办）
 ├── LICENSE
 ├── install.sh             # 一键安装入口
 ├── uninstall.sh           # 一键卸载入口
@@ -144,6 +145,8 @@ proxy add cv 'export https_proxy=http://127.0.0.1:7888 http_proxy=http://127.0.0
 ```
 
 > 同名 `add` 会**覆盖**原有配置。以上三种写法（`;` 分隔、换行分隔、单 `export` 多赋值）都合法，`proxy list` 均会逐行对齐显示。
+>
+> 代理名不能与内置命令重名（`add / list / ls / rm / use / off / status`），否则短语法 `proxy <name>` 会被内置命令抢占，`add` 时会直接报错。
 
 ### 2. 查看列表
 
@@ -229,6 +232,8 @@ zsh 用 `compdef`、bash 用 `complete -F`，两者共用同一套解析逻辑�
 
 可以直接手动编辑（编辑后立即生效，不需要重启 shell；切换时才会重新读取）。
 
+文件权限为 `600`（仅本人可读写），因为代理地址可能包含认证信息（如 `http://user:pass@host:port`）。
+
 ---
 
 ## 七、常见问题
@@ -249,6 +254,9 @@ A: 这些工具大多会自动读取 `http_proxy` / `https_proxy` / `all_proxy` 
 
 **Q: 切换代理时旧变量会清干净吗？**
 A: 会。每次 `use` / 切换前都会先 `unset` 全部常见代理变量（`http_proxy / https_proxy / all_proxy / no_proxy` 及其大写形式），避免残留。
+
+**Q: 提示「配置文件损坏」怎么办？**
+A: 报错信息会给出损坏文件的完整路径和具体原因（通常是手动编辑后 JSON 格式出错）。按提示修复该文件即可；若不想修，删除该文件后用 `proxy add` 重新添加。
 
 ---
 
