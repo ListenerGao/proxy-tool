@@ -16,6 +16,7 @@
 - 2026-07-15 四处健壮性修复：config.json 权限收紧至 600、`add` 拒绝内置命令名、配置损坏报错附文件路径、`use` 先落盘再输出 shell 命令（已推送）
 - 2026-07-15 新增本 ROADMAP.md（接入 projects 看板自动提取）；README 同步补充命令名限制、600 权限说明与配置损坏 FAQ
 - 2026-07-15 修复历史 bug：`proxy --help` / 子命令 `-h` 的 argparse 帮助文本默认打到 stdout 被 wrapper eval 导致 parse error，现强制走 stderr（`_StderrHelpParser`）
+- 2026-07-23 README「原理」章节从 3 行扩写为 6 个子节：进程模型约束、stdout/stderr 信道分工、`proxy mp` 完整链路、`__init` 跨终端恢复、原子写入与 Tab 补全机制，并新增与 TUN / 全局代理的对比（仅文档改动，未动代码）
 
 ## 进行中
 

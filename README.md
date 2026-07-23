@@ -13,13 +13,88 @@
 
 ## 一、原理
 
-子进程（Python 脚本）**无法**修改父 shell 的环境变量，因此本工具采用 **"Python 主程序 + shell wrapper 函数"** 的方案：
+一句话：**Python 不去改环境变量，只负责生成 shell 命令文本，真正的执行交给当前 shell 的 `eval`。**
 
-1. Python 程序把要执行的 `export` / `unset` 命令打印到 **stdout**
-2. 给人看的提示信息打印到 **stderr**
-3. shell 中定义一个 `proxy()` 函数，用 `eval "$(python3 proxy.py ...)"` 把 stdout 的命令在**当前 shell** 里执行
+### 1. 为什么要这么绕
 
-这样环境变量才能真正改到你当前终端里。
+`export` 只影响当前进程和它的子进程。你在终端跑 `python3 proxy.py use mp`，Python 是终端 shell 的**子进程**，它把 `os.environ` 改得天翻地覆，进程一退出也全没了，父 shell 毫无感知。这是 Unix 进程模型的硬约束，绕不过去。
+
+唯一的出路是让**父 shell 自己**执行 `export`。于是分工变成：Python 算出该执行什么，shell 负责执行。
+
+### 2. 通信信道：stdout 传命令，stderr 传人话
+
+这是全项目的地基约定：
+
+- **stdout** —— 只写 `export` / `unset`，给机器 `eval`
+- **stderr** —— 所有提示、报错、`list` 的彩色表格，给人看
+
+wrapper 只捕获 stdout，stderr 直接透传到终端：
+
+```sh
+shell_cmds="$(python3 "$bin" "$@")"   # $() 只捕获 stdout
+local rc=$?
+[[ -n "$shell_cmds" ]] && eval "$shell_cmds"
+return $rc
+```
+
+所以人话原样流到屏幕，命令文本进了 `eval`。**反过来说，stdout 里混进任何一句普通输出，整个工具就会 parse error。**（曾出现过的 bug：argparse 默认把 `--help` 帮助文本打到 stdout，被 `eval` 当成 shell 命令，现已强制改道 stderr。）
+
+另一个关键点：`proxy` 必须是 **shell 函数**，不能是脚本或 alias —— 函数在当前 shell 上下文里运行，`eval` 出来的 `export` 才落在你这个终端上。
+
+### 3. 一次 `proxy mp` 的完整链路
+
+1. 你敲 `proxy mp`，触发 shell 函数
+2. 函数调用 `python3 proxy.py mp`
+3. 短语法预处理：`mp` 不在内置命令集合里，但存在于配置的 proxies 中 → 参数改写为 `use mp`
+4. `cmd_use` 先把 `current = "mp"` **落盘**，再往 stdout 依次输出：
+   - `unset http_proxy https_proxy ...`（清掉上一份残留，避免切换时混用）
+   - 存储的 export 脚本原文
+5. stderr 打一句「已切换到 'mp'」
+6. 函数把 stdout 的两行 `eval` 掉，环境变量真正生效
+
+第 4 步「先落盘再输出」是刻意为之：万一写配置失败，程序直接退出，stdout 为空，环境变量原封不动，磁盘状态与 shell 状态不会打架。
+
+### 4. 跨终端恢复：`__init` 隐藏命令
+
+新开的终端是全新进程，环境变量当然是空的。`proxy.sh` 在被 source 时（即每次开终端）自动执行一次 `python3 proxy.py __init`，它读配置里的 `current` 并只输出对应的 export；没有 `current` 就静默不输出。
+
+三个细节：
+
+- `__init` 在程序入口处**提前拦截**，完全不经过 argparse，因此不会出现在 `proxy -h` 里
+- 它**只 export、不 unset** —— 新终端本来就干净，多余的 unset 会误伤你手动设置的其他变量
+- 它不写 stderr，否则每开一个终端都要被刷一行噪音
+
+### 5. 两个次要机制
+
+**原子写入**：先写 `config.tmp`、`chmod 600`，再用 `Path.replace()` 原子替换。`replace` 在同一文件系统上是原子 rename，避免两个终端同时写把 JSON 写成半截。`600` 是因为代理地址可能带账号密码。
+
+**Tab 补全**：直接 `grep` + `sed` 从 `config.json` 里抠代理名，不启动 Python。补全是高频交互，起一个解释器的 50~100ms 延迟很明显。代价是它依赖 `json.dump(indent=2)` 产生的固定缩进（代理名恰好在 4 空格那一层），序列化参数不能随意改。
+
+### 6. 与 TUN / 全局代理的区别
+
+本质区别：**环境变量是「请应用自觉走代理」，TUN 是「在网络栈层面把流量抢过来」。** 前者是应用层的约定，后者是系统层的强制。
+
+`http_proxy` 这类变量不是内核认的东西，纯粹是约定俗成 —— curl、wget、git、pip、npm 等程序在启动时自己去读它，然后主动把请求发给代理服务器。谁不读，谁就不走代理，内核完全不参与。而 TUN 模式创建一块虚拟网卡并改写路由表，任何进程发出的 IP 包都会被内核路由过去，由代理客户端解析转发，应用毫不知情。
+
+| | 环境变量（本工具） | TUN |
+| --- | --- | --- |
+| 生效范围 | 只有读该变量的进程，且限于设置了变量的会话 | 全系统所有流量 |
+| 支持协议 | 基本只有 HTTP/HTTPS（部分工具支持 `all_proxy` 走 SOCKS） | 任意 IP 流量：UDP、ICMP、游戏、自定义协议 |
+| 权限 | 无需 root | 需要管理员权限创建网卡、改路由 |
+| 分应用控制 | 天然隔离，这个终端走、那个终端不走 | 需靠代理客户端的进程规则实现，配置复杂 |
+| 出问题时 | 最多某个命令连不上 | 路由改错可能整机断网 |
+| DNS | 通常仍是本地解析 | 可整个接管，彻底避免 DNS 污染 |
+| 痕迹 | 关掉终端就没了 | 系统级持久状态 |
+
+**环境变量方式的典型失效场景：**
+
+- **Docker** —— `docker pull` 由 dockerd 守护进程发起，看不见你终端的变量，需改 daemon 配置
+- **GUI 应用** —— 从 Dock / Finder 启动的程序不继承 shell 环境
+- **sudo** —— 默认清空环境变量（`env_reset`），`sudo apt update` 不走代理
+- **不读变量的程序** —— 如 Java 认的是 `-Dhttp.proxyHost` 而非环境变量
+- **UDP / 非 HTTP 协议** —— 完全没辙
+
+**该用哪个？** 不是二选一，取决于场景：终端开发工作（git clone、pip install、curl 调 API、npm）用环境变量更合适 —— 精准、无权限要求、随开随关、不影响其他任何东西，且你能明确知道哪些流量走了代理；全局上网、非 HTTP 协议、管不住的 GUI 程序则只能上 TUN。两者并不冲突，常见做法是 TUN 全局兜底，同时用本工具给特定终端指一个不同的出口。
 
 ---
 
